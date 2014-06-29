@@ -1,13 +1,12 @@
 import ceylon.collection { ArrayList }
 abstract class State()
         of code | commentBlockOrLineStart1  | commentBlock | 
-        commentBlockEnd1 | commentBlockEnd2 | commentLine{} 
+        commentBlockEnd1  | commentLine{} 
 
         object code extends State() {}
         object commentBlockOrLineStart1 extends State() {}
         object commentBlock extends State() {}
         object commentBlockEnd1 extends State() {}
-        object commentBlockEnd2 extends State() {}
         object commentLine extends State() {}
         
 
@@ -37,32 +36,41 @@ class Automaton() {
             switch (e)
             case (is Character) {
                 if(e == '/'){
-                    state = commentLine;
+                    state = commentLine; b.push('\n');
                 }else if(e == '*'){
-                    state = commentBlock;
+                    state = commentBlock; b.push('\n');
+                } else {
+                    state = code;
                 }
             }
-            case (newLine) { b.pop(); state = code; }
+            case (newLine) { state = code; }
         }
         case(commentBlock){
             switch (e)
-            case (is Character) {b.push(e);}
+            case (is Character) {
+                if(e == '*'){
+                    state = commentBlockEnd1; b.push(e);
+                }else {
+                    b.push(e);
+                }
+            }
             case (newLine) {b.push(' ');}
         }
         case(commentBlockEnd1){
             switch (e)
-            case (is Character) {}
-            case (newLine) {}
-        }
-        case(commentBlockEnd2){
-            switch (e)
-            case (is Character) {}
-            case (newLine) {}
+            case (is Character) {
+                if(e == '/'){
+                    state = code; b.pop();
+                }else {
+                    state = commentBlock;
+                }
+            }
+            case (newLine) { state = commentBlock; }
         }
         case(commentLine){
             switch (e)
-            case (is Character) {}
-            case (newLine) {}
+            case (is Character) { b.push(e);}
+            case (newLine) {state = code;}
         }
         
      
