@@ -1,62 +1,82 @@
-import ceylon.collection { ArrayList }
-abstract class State()
-        of code | commentBlockOrLineStart1  | commentBlock | 
-        commentBlockEnd1  | commentLine{} 
+import ceylon.collection {
+    ArrayList
+}
+abstract class State(shared Boolean followingCommentInLine = false)
+        of code | codeFollowingCommentLine | commentMiscStartSlash  | commentMiscStartSlashFollowingCommentLine | commentBlock | 
+        commentBlockStopAsterisk  | commentLine{} 
 
-        object code extends State() {}
-        object commentBlockOrLineStart1 extends State() {}
-        object commentBlock extends State() {}
-        object commentBlockEnd1 extends State() {}
-        object commentLine extends State() {}
-        
+object code extends State() {}
+object codeFollowingCommentLine extends State(true) {}
+object commentMiscStartSlash extends State() {}
+object commentMiscStartSlashFollowingCommentLine extends State(true) {}
+object commentBlock extends State() {}
+object commentBlockStopAsterisk extends State() {}
+object commentLine extends State() {}
+
 
 shared abstract class NewLine() of newLine{}object newLine extends NewLine() {}
 
 
 class Automaton() {
-   
+    
     value b = ArrayList<Character>();
-   
+    
     variable State state = code;
-
+    
     shared alias Event => Character|NewLine;
+    
+    void processEventInCodeState(Event e){
+        switch (e)
+        case (is Character) {
+            if(e == '/'){
+                state = state.followingCommentInLine then commentMiscStartSlashFollowingCommentLine else commentMiscStartSlash;
+            }
+        }
+        case (newLine) { state = code;}
+    }
+    
+    void processEventInCommentMiscStartSlashState(Event e){
+        switch (e)
+        case (is Character) {
+            if(e == '/'){
+                b.push(state.followingCommentInLine then ' ' else '\n');
+                state = commentLine; 
+            }else if(e == '*'){
+                b.push('\n');
+                state = commentBlock; 
+            } else {
+                state = code;
+            }
+        }
+        case (newLine) { state = code; }
+    }
     
     shared void process(Event e){
         switch(state)
         case(code){
-            switch (e)
-            case (is Character) {
-                if(e == '/'){
-                    state = commentBlockOrLineStart1;
-                }
-            }
-            case (newLine) {}
+            processEventInCodeState(e);
         }
-        case(commentBlockOrLineStart1){
-            switch (e)
-            case (is Character) {
-                if(e == '/'){
-                    state = commentLine; b.push('\n');
-                }else if(e == '*'){
-                    state = commentBlock; b.push('\n');
-                } else {
-                    state = code;
-                }
-            }
-            case (newLine) { state = code; }
+        case(codeFollowingCommentLine){
+            processEventInCodeState(e);
+        }
+        case(commentMiscStartSlash){
+            processEventInCommentMiscStartSlashState(e);
+        }
+        case(commentMiscStartSlashFollowingCommentLine){
+            processEventInCommentMiscStartSlashState(e);
         }
         case(commentBlock){
             switch (e)
             case (is Character) {
                 if(e == '*'){
-                    state = commentBlockEnd1; b.push(e);
+                    state = commentBlockStopAsterisk; b.push(e);
                 }else {
                     b.push(e);
                 }
             }
             case (newLine) {b.push(' ');}
         }
-        case(commentBlockEnd1){
+        case(commentBlockStopAsterisk){
             switch (e)
             case (is Character) {
                 if(e == '/'){
@@ -69,14 +89,14 @@ class Automaton() {
         }
         case(commentLine){
             switch (e)
-            case (is Character) { b.push(e);}
-            case (newLine) {state = code;}
+            case (is Character) { b.push(e); }
+            case (newLine) { state = codeFollowingCommentLine; }
         }
         
-     
+        
         
     }
-
+    
     shared void printBuffer(){
         print(String(b));
     }

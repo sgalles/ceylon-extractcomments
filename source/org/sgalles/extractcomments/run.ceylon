@@ -2,29 +2,34 @@ import ceylon.file {
     parsePath,
     Directory,
     File,
-    Path, Resource
-}
+    Resource
+}
+shared void runEnglish() => run("en");
+
+shared void runSpanish() => run("es");
+
+shared void runFrench() => run("fr");
 
 "Run the module `org.sgalles.extractcomments`."
-shared void run() {
+void run(String lang) {
     
-    Resource fileDir = parsePath("""C:\Users\admin\Documents\GitHub\ceylon-walkthrough\source\fr""").resource;
+    Resource fileDir = parsePath("""../ceylon-walkthrough/source/""" + lang).resource;
     assert(is Directory fileDir);
     for(value file in fileDir.children("*.ceylon")){
         assert (is File file);
-        value auto = Automaton();
+        value automaton = Automaton();
         print("--------");
         print(file.name);
         try (reader = file.Reader("UTF-8")) {
             while(exists line =  reader.readLine()){
                 for(c in line){
-                    auto.process(c);
+                    automaton.process(c);
                 }
-                auto.process(newLine);
+                automaton.process(newLine);
             }
         }
-        auto.printBuffer();
+        automaton.printBuffer();
     }
-   
+    
     
 }
