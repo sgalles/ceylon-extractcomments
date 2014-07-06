@@ -4,11 +4,11 @@ import ceylon.file {
     File,
     Resource
 }
-shared void runEnglish() => run("en");
+shared void runEnglish() { run("en"); }
 
-shared void runSpanish() => run("es");
+shared void runSpanish() { run("es"); }
 
-shared void runFrench() => run("fr");
+shared void runFrench() { run("fr"); }
 
 "Run the module `org.sgalles.extractcomments`."
 void run(String lang) {
@@ -18,6 +18,7 @@ void run(String lang) {
     for(value file in fileDir.children("*.ceylon")){
         assert (is File file);
         value automaton = Automaton();
+        print("");
         print("--------");
         print(file.name);
         try (reader = file.Reader("UTF-8")) {

@@ -25,6 +25,10 @@ class Automaton() {
     
     shared alias Event => Character|NewLine;
     
+    variable Integer currentLineNumber = 1;
+    
+    String linePrefix() => "\n``currentLineNumber``) ";
+    
     void processEventInCodeState(Event e){
         switch (e)
         case (is Character) {
@@ -39,10 +43,10 @@ class Automaton() {
         switch (e)
         case (is Character) {
             if(e == '/'){
-                b.push(state.followingCommentInLine then ' ' else '\n');
+                b.addAll(state.followingCommentInLine then " " else linePrefix());
                 state = commentLine; 
             }else if(e == '*'){
-                b.push('\n');
+                b.addAll(linePrefix());
                 state = commentBlock; 
             } else {
                 state = code;
@@ -51,7 +55,7 @@ class Automaton() {
         case (newLine) { state = code; }
     }
     
-    shared void process(Event e){
+    void computeAutomaton(Event e) {
         switch(state)
         case(code){
             processEventInCodeState(e);
@@ -68,10 +72,9 @@ class Automaton() {
         case(commentBlock){
             switch (e)
             case (is Character) {
+                b.push(e);
                 if(e == '*'){
-                    state = commentBlockStopAsterisk; b.push(e);
-                }else {
-                    b.push(e);
+                    state = commentBlockStopAsterisk; 
                 }
             }
             case (newLine) {b.push(' ');}
@@ -80,7 +83,8 @@ class Automaton() {
             switch (e)
             case (is Character) {
                 if(e == '/'){
-                    state = code; b.pop();
+                    b.pop(); // remove added asterisk
+                    state = code; 
                 }else {
                     state = commentBlock;
                 }
@@ -92,8 +96,20 @@ class Automaton() {
             case (is Character) { b.push(e); }
             case (newLine) { state = codeFollowingCommentLine; }
         }
-        
-        
+    }
+    
+    
+    
+    shared void computeLineNumber(Event e) {
+        switch (e)
+        case (is Character) { }
+        case (newLine) { currentLineNumber++; }
+    }
+    
+    
+    shared void process(Event e){
+        computeLineNumber(e);
+        computeAutomaton(e);
         
     }
     
